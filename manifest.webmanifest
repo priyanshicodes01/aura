@@ -1,0 +1,19 @@
+{
+  "name": "Aura — journey companion",
+  "short_name": "Aura",
+  "description": "Compare journeys by lighting, activity and verified transport. Keeps guiding you when the signal and the battery run out.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07080B",
+  "theme_color": "#07080B",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
