@@ -7,7 +7,7 @@ A journey companion for Delhi that compares routes by what is physically on them
 street lighting, places open right now, and verified municipal transport — and that
 keeps guiding you after the internet and the battery have gone.
 
-Live: _add your Vercel URL here_
+Live: https://aura-kappa-self.vercel.app/
 
 ---
 
