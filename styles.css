@@ -1,0 +1,394 @@
+/* ============================================================
+   AURA — visual system
+   Note on colour: there is no red and no green in this palette.
+   Red/green encode a verdict ("danger" / "safe") and Aura does not
+   issue verdicts. Each factor gets its own neutral hue instead, so
+   a low score reads as "less of this thing", never as "bad place".
+   ============================================================ */
+
+:root {
+  --bg:        #07080B;
+  --surface:   #101319;
+  --surface-2: #171B23;
+  --line:      #262B36;
+  --text:      #E9EBF0;
+  --muted:     #878D9B;
+  --faint:     #565C6B;
+
+  --lit:       #F0B429;   /* street lighting   */
+  --active:    #4CC9F0;   /* places open now   */
+  --connected: #B085F5;   /* transport nearby  */
+  --verified:  #7BE3C3;   /* municipal fleet   */
+
+  --r: 14px;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 28px;
+  padding: 28px 16px 48px;
+  overflow-x: hidden;
+}
+
+/* ---------------- phone frame ---------------- */
+.phone {
+  width: 390px;
+  min-width: 390px;
+  /* Fixed. Do NOT make this viewport-relative: .mapwrap is flex:1 and absorbs
+     any height loss, so shrinking the phone collapses the map and the labels
+     pile on top of each other. */
+  height: 800px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 34px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 30px 80px rgba(0,0,0,.65);
+  display: flex;
+  flex-direction: column;
+}
+
+.statusbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px 8px; font-size: 12px; color: var(--muted);
+  letter-spacing: .02em; flex: 0 0 auto;
+}
+.statusbar .batt { display: flex; align-items: center; gap: 6px; }
+.batt-shell { width: 24px; height: 11px; border: 1.3px solid var(--muted); border-radius: 3px; position: relative; }
+.batt-fill  { position: absolute; inset: 1.5px; width: 0; background: var(--muted); border-radius: 1px; transition: width .3s; }
+
+/* ---------------- header ---------------- */
+.head { padding: 4px 20px 12px; flex: 0 0 auto; }
+.brand { display: flex; align-items: baseline; gap: 9px; }
+.brand h1 { font-size: 21px; font-weight: 600; letter-spacing: -.02em; }
+.brand .ctx { font-size: 11.5px; color: var(--muted); margin-left: auto; }
+.tagline { font-size: 12px; color: var(--faint); margin-top: 2px; }
+
+/* ---------------- intent bar ---------------- */
+.intent { padding: 0 20px 12px; flex: 0 0 auto; }
+.intent-box {
+  display: flex; gap: 8px; background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px;
+}
+.intent-box input {
+  flex: 1; background: none; border: none; color: var(--text);
+  font: inherit; font-size: 13.5px; outline: none;
+}
+.intent-box input::placeholder { color: var(--faint); }
+.intent-box button {
+  background: var(--text); color: var(--bg); border: none; border-radius: 9px;
+  padding: 5px 13px; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chip {
+  font-size: 11px; padding: 3px 9px; border-radius: 999px;
+  background: rgba(255,255,255,.05); border: 1px solid var(--line); color: var(--muted);
+  cursor: pointer;
+}
+.chip.read { background: rgba(240,180,41,.09); border-color: rgba(240,180,41,.3); color: var(--lit); cursor: default; }
+
+/* ---------------- map ---------------- */
+.mapwrap { position: relative; flex: 1 1 auto; min-height: 260px; background: #0A0C10; }
+#map { width: 100%; height: 100%; display: block; }
+.map-legend {
+  position: absolute; left: 12px; bottom: 10px; display: flex; gap: 10px;
+  font-size: 10px; color: var(--muted); background: rgba(7,8,11,.8);
+  padding: 5px 9px; border-radius: 8px; backdrop-filter: blur(6px);
+}
+/* Legend swatches are shaped like the thing they describe — a bar for a
+   street, a dot for a point of interest. A square swatch made the open-now
+   dots read as a dotted route. */
+.map-legend i { display: inline-block; margin-right: 4px; vertical-align: middle; }
+.map-legend i.line { width: 13px; height: 3px; border-radius: 2px; }
+.map-legend i.dot  { width: 7px;  height: 7px; border-radius: 50%; }
+
+#mapExpand {
+  position: absolute; right: 10px; top: 10px; width: 32px; height: 32px;
+  border-radius: 9px; border: 1px solid var(--line); background: rgba(7,8,11,.8);
+  color: var(--muted); font-size: 15px; cursor: pointer; backdrop-filter: blur(6px);
+  line-height: 1;
+}
+#mapExpand:hover { color: var(--text); border-color: #39404F; }
+
+/* ---------------- enlarged map ---------------- */
+#mapZoom {
+  position: fixed; inset: 0; z-index: 300; background: var(--bg);
+  display: none; flex-direction: column; padding: 18px 22px 16px;
+}
+#mapZoom.on { display: flex; }
+.mz-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex: 0 0 auto; }
+.mz-head b { display: block; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.mz-head span { font-size: 12px; color: var(--muted); }
+.mz-head button {
+  padding: 8px 16px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--surface-2); color: var(--text); font: inherit; font-size: 12.5px;
+  font-weight: 600; cursor: pointer; flex: 0 0 auto;
+}
+#mapBig { flex: 1 1 auto; min-height: 0; width: 100%; display: block; }
+.mz-legend {
+  display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 11.5px;
+  color: var(--muted); flex: 0 0 auto; padding-top: 8px;
+}
+.mz-legend b { color: var(--text); font-weight: 600; }
+.mz-legend i { display: inline-block; margin-right: 7px; vertical-align: middle; flex: 0 0 auto; }
+.mz-legend i.line { width: 18px; height: 3px; border-radius: 2px; }
+.mz-legend i.dot  { width: 9px;  height: 9px; border-radius: 50%; }
+.mz-legend i.line.dash {
+  background: none; height: 0; border-top: 3px dashed #6A7183; border-radius: 0;
+}
+.mz-legend i.diamond {
+  width: 9px; height: 9px; border: 1.5px solid var(--verified);
+  transform: rotate(45deg); margin-right: 9px;
+}
+.mz-legend span { display: inline-flex; align-items: center; }
+
+/* ---------------- sheet ---------------- */
+.sheet {
+  flex: 0 0 auto; background: var(--surface); border-top: 1px solid var(--line);
+  border-radius: 20px 20px 0 0; padding: 12px 0 14px; max-height: 54%; overflow-y: auto;
+}
+/* A visible scrollbar on purpose. Hiding it meant nobody knew routes B and C
+   were down there, which made the whole comparison screen look like one route. */
+.sheet::-webkit-scrollbar { width: 6px; }
+.sheet::-webkit-scrollbar-track { background: transparent; }
+.sheet::-webkit-scrollbar-thumb { background: #3B424F; border-radius: 3px; }
+.sheet::-webkit-scrollbar-thumb:hover { background: #4C5566; }
+.sheet h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .09em; color: var(--faint); padding: 0 20px 8px; font-weight: 600; }
+
+.route {
+  margin: 0 14px 8px; padding: 12px 14px; border-radius: var(--r);
+  background: var(--surface-2); border: 1px solid var(--line); cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.route:hover { border-color: #39404F; background: #1A1E26; }
+/* Selection needs to be unmistakable — it is how she compares journeys. */
+.route.sel {
+  border-color: #8A93A6; background: #1C2129;
+  box-shadow: inset 3px 0 0 var(--text);
+}
+
+/* The affordance lives in the list heading instead of repeating on every
+   card, where it was both redundant and the thing that got clipped. */
+.sheet h2 span {
+  text-transform: none; letter-spacing: 0; color: var(--faint);
+  font-weight: 400; margin-left: 6px;
+}
+.route-top { display: flex; align-items: center; gap: 9px; }
+.route-letter {
+  width: 22px; height: 22px; border-radius: 7px; background: rgba(255,255,255,.07);
+  display: grid; place-items: center; font-size: 12px; font-weight: 700; flex: 0 0 auto;
+}
+.route.sel .route-letter { background: var(--text); color: var(--bg); }
+.route-time { font-size: 15px; font-weight: 600; }
+.route-dist { font-size: 12px; color: var(--muted); }
+.route-tag {
+  margin-left: auto; font-size: 10px; color: var(--muted);
+  border: 1px solid var(--line); padding: 2px 7px; border-radius: 999px;
+}
+
+.bars { display: flex; gap: 10px; margin-top: 10px; }
+.bar { flex: 1; }
+.bar-label { display: flex; justify-content: space-between; font-size: 10px; color: var(--faint); margin-bottom: 4px; }
+.bar-track { height: 4px; border-radius: 99px; background: rgba(255,255,255,.07); overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 99px; transition: width .35s ease; }
+
+.facts { margin-top: 9px; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+.badge-verified {
+  display: inline-flex; align-items: center; gap: 5px; margin-top: 9px;
+  font-size: 10.5px; color: var(--verified); background: rgba(123,227,195,.08);
+  border: 1px solid rgba(123,227,195,.25); padding: 3px 8px; border-radius: 999px;
+}
+
+/* ---------------- vehicle check ----------------
+   Two questions, not one: is it in the city's feed, and is it on route. */
+.vcheck { margin-top: 9px; border-top: 1px solid var(--line); padding-top: 9px; display: grid; gap: 7px; }
+.vrow { display: flex; gap: 8px; font-size: 11px; line-height: 1.45; }
+.vrow span { flex: 0 0 auto; font-size: 10px; margin-top: 2px; }
+.vrow b { display: block; font-weight: 600; font-size: 11.5px; }
+.vrow.ok  span, .vrow.ok  b { color: var(--verified); }
+.vrow.ok  div { color: #7E9A93; }
+.vrow.bad span, .vrow.bad b { color: #C9A227; }
+.vrow.bad div { color: var(--muted); }
+
+.supers { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.supers span {
+  font-size: 10px; color: var(--muted); border: 1px solid var(--line);
+  padding: 2px 7px; border-radius: 999px; cursor: help;
+}
+
+/* ---------------- why panel ---------------- */
+.why {
+  margin: 4px 14px 0; padding: 12px 14px; border-radius: var(--r);
+  background: rgba(76,201,240,.05); border: 1px solid rgba(76,201,240,.18);
+  font-size: 12.5px; line-height: 1.55; color: #CFE9F5;
+}
+.why b { color: #fff; font-weight: 600; }
+.why .src { display: block; margin-top: 7px; font-size: 10px; color: var(--faint); }
+
+/* ---------------- actions ---------------- */
+.actions { display: flex; gap: 8px; padding: 10px 14px 0; }
+.btn {
+  flex: 1; padding: 11px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--surface-2); color: var(--text); font: inherit; font-size: 12.5px;
+  font-weight: 600; cursor: pointer;
+}
+.btn:hover { border-color: #39404F; }
+.btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+/* ---------------- burn banner ---------------- */
+.burn {
+  margin: 0 14px 8px; padding: 11px 13px; border-radius: var(--r);
+  background: rgba(240,180,41,.07); border: 1px solid rgba(240,180,41,.3);
+  font-size: 12px; color: #F4D79B;
+}
+.burn b { color: var(--lit); }
+.burn .math { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 10.5px; color: var(--faint); display: block; margin-top: 5px; }
+.burn button {
+  margin-top: 9px; width: 100%; padding: 9px; border-radius: 10px; border: none;
+  background: var(--lit); color: #18140A; font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
+}
+
+/* ---------------- mid-journey check-in ---------------- */
+.checkin {
+  margin: 0 14px 8px; padding: 11px 13px; border-radius: var(--r);
+  background: rgba(176,133,245,.07); border: 1px solid rgba(176,133,245,.28);
+  font-size: 12px; color: #D6C8F2; line-height: 1.5;
+}
+.checkin b { color: #fff; font-weight: 600; }
+.checkin.done { background: rgba(123,227,195,.06); border-color: rgba(123,227,195,.25); color: #B5D9CF; }
+.checkin.done b { color: var(--verified); }
+.checkin-btns { display: flex; gap: 8px; margin-top: 10px; }
+.checkin-btns button {
+  flex: 1; padding: 9px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--surface-2); color: var(--text); font: inherit; font-size: 12px;
+  font-weight: 600; cursor: pointer;
+}
+.checkin-btns button:hover { border-color: #4A4160; }
+
+/* ---------------- shadow mode ---------------- */
+#shadow {
+  position: absolute; inset: 0; background: #000; z-index: 50;
+  display: none; flex-direction: column; align-items: center;
+  padding: 26px 20px; color: #fff;
+}
+#shadow.on { display: flex; }
+.sh-top { width: 100%; display: flex; justify-content: space-between; font-size: 11px; color: #5A5A5A; letter-spacing: .06em; }
+.sh-arrow { margin: auto 0 0; }
+.sh-dest { font-size: 12px; color: #6E6E6E; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; text-align: center; }
+.sh-dist { font-size: 52px; font-weight: 300; letter-spacing: -.03em; line-height: 1; text-align: center; }
+.sh-dist span { font-size: 17px; color: #6E6E6E; margin-left: 4px; }
+.sh-next { font-size: 13px; color: #9A9A9A; text-align: center; margin-top: 10px; }
+.sh-help {
+  margin-top: 22px; width: 100%; border: 1px solid #1E1E1E; border-radius: 12px;
+  padding: 11px 13px; font-size: 12px; color: #8A8A8A;
+}
+.sh-help b { color: #DADADA; display: block; font-size: 13px; font-weight: 600; }
+.sh-foot { margin-top: auto; width: 100%; }
+.sh-note { font-size: 10px; color: #3E3E3E; text-align: center; margin-top: 10px; line-height: 1.5; }
+
+#pocketBtn {
+  width: 100%; margin-bottom: 10px; padding: 11px; border-radius: 12px;
+  background: #0A0A0A; border: 1px solid #222; color: #6E6E6E;
+  font: inherit; font-size: 12px; cursor: pointer;
+}
+
+/* Pocket mode. Almost no lit pixels, which is the entire point — the hint
+   text is deliberately near-invisible rather than bright. */
+#pocket {
+  position: absolute; inset: 0; background: #000; z-index: 80; display: none;
+  align-items: flex-end; justify-content: center; padding: 34px 20px;
+}
+#pocket.on { display: flex; }
+.pk-hint { font-size: 10.5px; color: #1F1F1F; text-align: center; line-height: 2; letter-spacing: .04em; }
+
+/* ghost ping slider */
+.slider {
+  position: relative; height: 54px; border: 1px solid #222; border-radius: 27px;
+  background: #0A0A0A; overflow: hidden; user-select: none; touch-action: none;
+}
+.slider-label {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 12.5px; color: #6E6E6E; letter-spacing: .05em; pointer-events: none;
+}
+.slider-knob {
+  position: absolute; top: 4px; left: 4px; width: 46px; height: 44px;
+  border-radius: 22px; background: #fff; display: grid; place-items: center;
+  color: #000; font-size: 18px; cursor: grab;
+}
+.slider.done .slider-knob { background: var(--verified); }
+
+/* ---------------- vibe-is-off ---------------- */
+#evade {
+  position: absolute; inset: 0; background: #000; z-index: 60; display: none;
+  flex-direction: column; align-items: center; justify-content: center; padding: 24px;
+}
+#evade.on { display: flex; }
+.ev-label { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #5A5A5A; }
+.ev-name { font-size: 26px; font-weight: 600; margin-top: 10px; text-align: center; }
+.ev-dist { font-size: 15px; color: #8A8A8A; margin-top: 6px; }
+
+/* ---------------- modal ---------------- */
+.modal {
+  position: absolute; inset: 0; background: rgba(0,0,0,.72); z-index: 70;
+  display: none; align-items: flex-end; backdrop-filter: blur(3px);
+}
+.modal.on { display: flex; }
+.modal-card {
+  width: 100%; background: var(--surface); border-top: 1px solid var(--line);
+  border-radius: 20px 20px 0 0; padding: 18px 20px 22px;
+}
+.modal-card h3 { font-size: 15px; margin-bottom: 4px; }
+.modal-card p { font-size: 12.5px; color: var(--muted); margin-bottom: 12px; }
+.sms-preview {
+  background: #0B0D11; border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px; font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11px; line-height: 1.6; color: #B9C0CE; white-space: pre-wrap; word-break: break-word;
+}
+.tag-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+.tag-opt {
+  padding: 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line);
+  font-size: 12.5px; cursor: pointer; display: flex; align-items: center; gap: 8px;
+}
+.tag-opt:hover { border-color: #39404F; }
+.verdict {
+  margin-top: 10px; padding: 11px 13px; border-radius: 12px; font-size: 12px;
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--muted);
+}
+.verdict b { color: var(--text); }
+
+/* ---------------- demo rig ---------------- */
+.rig {
+  width: 290px; min-width: 290px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 18px; padding: 16px 18px 18px; position: sticky; top: 28px;
+}
+.rig h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--faint); margin-bottom: 3px; }
+.rig .sub { font-size: 11px; color: var(--faint); margin-bottom: 14px; line-height: 1.5; }
+.rig-row { margin-bottom: 14px; }
+.rig-row label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.rig-row label b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+.rig input[type=range] { width: 100%; accent-color: var(--text); }
+.seg { display: flex; gap: 6px; }
+.seg button {
+  flex: 1; padding: 7px; border-radius: 9px; border: 1px solid var(--line);
+  background: var(--surface-2); color: var(--muted); font: inherit; font-size: 11.5px; cursor: pointer;
+}
+.seg button.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+.rig .net { font-size: 11px; color: var(--faint); border-top: 1px solid var(--line); padding-top: 12px; margin-top: 4px; line-height: 1.6; }
+.rig .net b { color: var(--verified); }
+
+@media (max-width: 760px) {
+  body { flex-direction: column; align-items: center; padding: 0 0 24px; gap: 16px; }
+  .phone { width: 100%; min-width: 0; max-width: 430px; height: 100svh; border-radius: 0; border: none; }
+  .rig { width: calc(100% - 24px); min-width: 0; position: static; margin: 0 12px; }
+}

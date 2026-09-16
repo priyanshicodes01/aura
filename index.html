@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aura — Not just where to go, but which journey fits the moment</title>
+<meta name="description" content="A navigation companion that compares journeys by lighting, activity and transport — and keeps guiding you when the signal and the battery run out.">
+<meta name="theme-color" content="#07080B">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ========================= PHONE ========================= -->
+<div class="phone" id="phone">
+
+  <div class="statusbar">
+    <span id="clock">23:14</span>
+    <span id="netstate">No service</span>
+    <span class="batt">
+      <span id="battpct">34%</span>
+      <span class="batt-shell"><span class="batt-fill" id="battfill"></span></span>
+    </span>
+  </div>
+
+  <div class="head">
+    <div class="brand">
+      <h1>Aura</h1>
+      <span class="ctx" id="ctxline">Night mode · Hauz Khas → Green Park</span>
+    </div>
+    <div class="tagline">Not just where to go — which journey fits the moment.</div>
+  </div>
+
+  <div class="intent">
+    <div class="intent-box">
+      <input id="intentInput" placeholder="Tell Aura about this journey…" autocomplete="off">
+      <button id="intentGo">Plan</button>
+    </div>
+    <div class="chips" id="intentChips"></div>
+  </div>
+
+  <div class="mapwrap">
+    <svg id="map" preserveAspectRatio="xMidYMid meet"></svg>
+    <button id="mapExpand" title="Enlarge map">⤢</button>
+    <div class="map-legend">
+      <span><i class="line" style="background:var(--lit)"></i>lit street</span>
+      <span><i class="dot" style="background:var(--active)"></i>shop open</span>
+      <span><i class="dot" style="background:var(--connected)"></i>bus stop</span>
+      <span><i class="line" style="background:#2B3140"></i>unlit</span>
+    </div>
+  </div>
+
+  <div class="sheet" id="sheet">
+    <div id="burnSlot"></div>
+    <div id="checkinSlot"></div>
+    <h2>Journeys for right now <span id="routeCount"></span></h2>
+    <div id="routeList"></div>
+    <div class="why" id="whyPanel"></div>
+    <div class="actions">
+      <button class="btn" id="btnTag">Add a report</button>
+      <button class="btn" id="btnEvade">Vibe is off</button>
+      <button class="btn primary" id="btnStart">Start</button>
+    </div>
+  </div>
+
+  <!-- ---------- Shadow Mode (Round 2) ---------- -->
+  <div id="shadow">
+    <div class="sh-top">
+      <span id="shBatt">6%</span>
+      <span>OFFLINE · CACHED ROUTE</span>
+    </div>
+
+    <div class="sh-arrow">
+      <svg width="150" height="150" viewBox="0 0 100 100" id="shArrowSvg">
+        <g id="shArrowG">
+          <path d="M50 12 L50 84" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+          <path d="M34 28 L50 12 L66 28" fill="none" stroke="#fff" stroke-width="3"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+      </svg>
+    </div>
+
+    <div style="margin-top:14px">
+      <div class="sh-dest" id="shDest">GREEN PARK METRO</div>
+      <div class="sh-dist"><span id="shDistVal">820</span><span>m</span></div>
+      <div class="sh-next" id="shNext">Continue along Aurobindo Marg</div>
+    </div>
+
+    <div class="sh-help" id="shHelp"></div>
+
+    <div class="sh-foot">
+      <button id="pocketBtn">Pocket mode — screen off, buzz at turns</button>
+      <div class="slider" id="ghostSlider">
+        <div class="slider-label">Slide to send check-in</div>
+        <div class="slider-knob" id="ghostKnob">→</div>
+      </div>
+      <div class="sh-note">
+        Map rendering off · screen dimmed · GPS polled every 45s<br>
+        Check-in goes by SMS. No internet needed. Nothing is tracked.
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- Pocket mode: the cheapest screen is no screen ---------- -->
+  <div id="pocket">
+    <div class="pk-hint">
+      Screen off · one buzz left, two right<br>
+      <span id="pkBatt">6%</span> · <span id="pkDist">820 m</span> to go · tap to wake
+    </div>
+  </div>
+
+  <!-- ---------- Vibe is off (Module B) ---------- -->
+  <div id="evade">
+    <div class="ev-label">Nearest open help point</div>
+    <div class="ev-name" id="evName">Green Park 24h Chemist</div>
+    <div class="ev-dist" id="evDist">310 m · 4 min</div>
+    <svg width="130" height="130" viewBox="0 0 100 100" style="margin:26px 0">
+      <g id="evArrowG">
+        <path d="M50 14 L50 82" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+        <path d="M32 31 L50 14 L68 31" fill="none" stroke="#fff" stroke-width="4"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+    </svg>
+    <div class="sh-note" style="margin-bottom:18px">
+      Your location has not been shared with anyone.
+    </div>
+    <button class="btn" id="evExit" style="max-width:180px">Exit</button>
+  </div>
+
+  <!-- ---------- Modals ---------- -->
+  <div class="modal" id="tagModal">
+    <div class="modal-card">
+      <h3>Add a report</h3>
+      <p>Anonymous, snapped to the street, delayed before it appears. It can never be used to follow you.</p>
+      <div class="tag-grid" id="tagGrid"></div>
+      <div class="verdict" id="tagVerdict">Pick what you can see right now.</div>
+      <button class="btn" id="tagClose" style="margin-top:12px">Close</button>
+    </div>
+  </div>
+
+  <div class="modal" id="smsModal">
+    <div class="modal-card">
+      <h3>Check-in ready</h3>
+      <p>This exact text opens in your messaging app. You press send. Aura sends nothing on its own.</p>
+      <div class="sms-preview" id="smsPreview"></div>
+      <div class="actions" style="padding:12px 0 0">
+        <button class="btn" id="smsCancel">Cancel</button>
+        <button class="btn primary" id="smsSend">Open Messages</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============ ENLARGED MAP (for projectors and judges) ============ -->
+<div id="mapZoom">
+  <div class="mz-head">
+    <div>
+      <b>Hauz Khas Village → Green Park Metro</b>
+      <span id="mzMeta">23:14 · Route A</span>
+    </div>
+    <button id="mzClose">Close</button>
+  </div>
+  <svg id="mapBig" preserveAspectRatio="xMidYMid meet"></svg>
+  <div class="mz-legend">
+    <span><i class="line" style="background:var(--lit)"></i><b>brighter line</b> = more street lamps mapped</span>
+    <span><i class="line" style="background:#2B3140"></i><b>dark line</b> = no lighting mapped</span>
+    <span><i class="line dash"></i><b>dashed</b> = footpath, not a road</span>
+    <span><i class="dot" style="background:var(--active)"></i>one dot = one venue open at this hour</span>
+    <span><i class="dot" style="background:var(--connected)"></i>bus stop on this stretch</span>
+    <span><i class="diamond"></i>24×7 help point</span>
+    <span><i class="line" style="background:#fff"></i>the route you have selected</span>
+  </div>
+</div>
+
+<!-- ========================= DEMO RIG ========================= -->
+<div class="rig">
+  <h3>Demo rig</h3>
+  <div class="sub">Simulated sensors, so the app can be shown without walking to Green Park or draining a real phone. Everything else is live.</div>
+
+  <div class="rig-row">
+    <label>Time of day <b id="hourVal">23:00</b></label>
+    <input type="range" id="hourSlider" min="0" max="23" value="23">
+  </div>
+
+  <div class="rig-row">
+    <label>Battery <b id="battVal">34%</b></label>
+    <input type="range" id="battSlider" min="1" max="100" value="34">
+  </div>
+
+  <div class="rig-row">
+    <label>Journey progress <b id="progVal">0%</b></label>
+    <input type="range" id="progSlider" min="0" max="100" value="0">
+  </div>
+
+  <div class="rig-row">
+    <label>Battery drain</label>
+    <div class="seg">
+      <button data-drain="0" class="on">Steady</button>
+      <button data-drain="0.6">Normal</button>
+      <button data-drain="2.2">Heavy</button>
+    </div>
+  </div>
+
+  <div class="rig-row">
+    <label>Connectivity</label>
+    <div class="seg">
+      <button data-net="1">Online</button>
+      <button data-net="0" class="on">Offline</button>
+    </div>
+  </div>
+
+  <div class="net">
+    Network requests made by this page: <b id="reqCount">0</b>.<br>
+    Aura ships its map and its reasoning offline. Turn off your wi-fi and reload — it still works.
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
